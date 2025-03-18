@@ -1,0 +1,37 @@
+CREATE TYPE user_type AS ENUM ('admin', 'usuario');
+
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    celular VARCHAR(10) NOT NULL,
+    tipo user_type DEFAULT 'usuario',
+    auth_provider VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE boletas (
+    id SERIAL PRIMARY KEY,
+    numero INT UNIQUE NOT NULL
+);
+
+CREATE TABLE compras (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    boleta_id INT NOT NULL UNIQUE REFERENCES boletas(id) ON DELETE CASCADE,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    estado VARCHAR(20) DEFAULT 'pendiente' -- pendiente, pagado
+);
+
+CREATE TABLE sessions (
+    sid TEXT PRIMARY KEY,
+    sess JSON NOT NULL,
+    expire TIMESTAMPTZ NOT NULL
+);
+
+
+INSERT INTO usuarios (nombre, email, celular, tipo, auth_provider) 
+VALUES ('Admin', 'ortizgalindoj@gmail.com', '3053865489', 'admin', 'manual');
+
+INSERT INTO boletas (numero) 
+VALUES (1001), (1002), (1003), (1004), (1005);

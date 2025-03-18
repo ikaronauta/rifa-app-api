@@ -1,0 +1,19 @@
+DB: rifa_db
+UserAdmin: rifa_admin 
+Password: Adm1n@123*
+
+CREATE DATABASE rifa_db;
+CREATE USER rifa_admin WITH ENCRYPTED PASSWORD 'Adm1n@123*';
+GRANT ALL PRIVILEGES ON DATABASE rifa_db TO rifa_admin;
+
+sudo systemctl restart postgresql
+
+psql -U rifa_admin -d rifa_db -W
+
+
+
+http://localhost:3000/auth/google
+http://localhost:3000/auth/logout
+
+http://localhost:3000/users/
+http://localhost:3000/
