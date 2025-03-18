@@ -1,3 +1,10 @@
+Conectarse a postgres: psql -U postgres
+
+CREATE DATABASE rifa_db;
+CREATE DATABASE rifa_db;
+CREATE USER rifa_admin WITH ENCRYPTED PASSWORD 'Adm1n@123*';
+GRANT ALL PRIVILEGES ON DATABASE rifa_db TO rifa_admin;
+
 CREATE TYPE user_type AS ENUM ('admin', 'usuario');
 
 CREATE TABLE usuarios (
