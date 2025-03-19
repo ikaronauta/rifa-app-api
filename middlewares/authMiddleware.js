@@ -1,12 +1,19 @@
 const pool = require('../config/db');
 const { getFormattedDate } = require('../helpers/utils');
+const DEBUG_LOGS = process.env.DEBUG_LOGS === "true";
 
 // Función para eliminar sesiones previas
 async function removePreviousSessions(userId) {
-  await pool.query(
-    'DELETE FROM sessions WHERE sess::jsonb->>\'passport\' IS NOT NULL AND sess::jsonb->\'passport\'->>\'user\' = $1',
-    [userId]
-  );
+  try {
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Eliminando sesiones previas para el usuario ${userId}...`);
+    await pool.query(
+      "DELETE FROM sessions WHERE sess::jsonb->'passport'->>'user' = $1",
+      [userId]
+    );
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - ✅ Sesiones previas eliminadas para el usuario ${userId}`);
+  } catch (err) {
+    if (DEBUG_LOGS) console.error(`${getFormattedDate()} - ❌ Error eliminando sesiones previas:`, err);
+  }
 }
 
 const esAdmin = (req, res, next) => {

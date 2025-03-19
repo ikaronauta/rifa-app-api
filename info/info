@@ -13,7 +13,12 @@ psql -U rifa_admin -d rifa_db -W
 
 
 http://localhost:3000/auth/google
-http://localhost:3000/auth/logout
+http://localhost:3000/auth/google/logout
 
 http://localhost:3000/users/
 http://localhost:3000/
+
+
+node --inspect server.js
+chrome://inspect/#devices
+"Open dedicated DevTools for Node"

@@ -8,10 +8,13 @@ const pool = require('./config/db');
 const { getFormattedDate } = require('./helpers/utils');
 
 const userRoutes = require('./routes/userRoutes');
-const authRoutes = require('./routes/authRoutes');
+const authLocalRoutes = require('./routes/authLocalRoutes');
+const authGoogleRoutes = require('./routes/authGoogleRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const DEBUG_LOGS = process.env.DEBUG_LOGS === "true";
+
 
 // Configuración de CORS
 app.use(cors({
@@ -28,7 +31,7 @@ app.use(session({
     pool: pool,
     tableName: 'sessions'
   }),
-  secret: process.env.SESSION_SECRET || 'un_secreto_seguro',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -42,17 +45,18 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Rutas
-app.use('/auth', authRoutes);
+app.use('/auth/local', authLocalRoutes);
+app.use('/auth/google', authGoogleRoutes);
 app.use('/users', userRoutes);
 
 // Ruta de inicio
 app.get('/', async (req, res) => {
   try {
-    console.log(`${getFormattedDate()} - Consultando boletas`);
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boletas`);
     const result = await pool.query('SELECT * FROM boletas');
     res.json(result.rows);
   } catch (err) {
-    console.warn(`${getFormattedDate()} - Error al obtener las boletas`);
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Error al obtener las boletas`);
     res.status(500).json({ error: 'Error al obtener las boletas' });
   }
 });
