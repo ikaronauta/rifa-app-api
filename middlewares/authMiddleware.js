@@ -18,16 +18,26 @@ async function removePreviousSessions(userId) {
 
 const esAdmin = (req, res, next) => {
   if (!req.isAuthenticated() || req.user.tipo !== 'admin') {
-    console.warn(`${getFormattedDate()} - Acceso denegado`);
-    return res.status(403).json({ message: 'Acceso denegado' });
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Acceso denegado`);
+    return res.status(403).json({
+      success: false,
+      message: "Acceso denegado.",
+      data: [],
+      error: null
+    });
   }
   next();
 };
 
 const isAuthenticated = (req, res, next) => {
   if (!req.isAuthenticated()) {
-    console.warn(`${getFormattedDate()} - No autenticado`);
-    return res.status(401).json({ message: 'No autenticado' });
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - No autenticado`);
+    return res.status(401).json({
+      success: false,
+      message: "No autenticado.",
+      data: [],
+      error: null
+    });
   }
   next();
 };

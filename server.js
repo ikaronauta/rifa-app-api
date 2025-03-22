@@ -54,11 +54,30 @@ app.get('/', async (req, res) => {
   try {
     if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boletas`);
     const result = await pool.query('SELECT * FROM boletas');
-    res.json(result.rows);
+    res.status(200).json({
+      success: true,
+      message: "Boletas",
+      data: result.rows,
+      error: null
+    });
   } catch (err) {
-    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Error al obtener las boletas`);
-    res.status(500).json({ error: 'Error al obtener las boletas' });
+    console.error(`${getFormattedDate()} - Error al obtener las boletas`);
+    res.status(500).json({
+      success: false,
+      message: "Error al obtener las boletas",
+      data: [],
+      error: null
+    }); //
   }
+});
+
+app.get('/login-error', (req, res) => {
+  res.status(401).json({
+    success: false,
+    message: "Hubo un error en la autenticación. Intenta de nuevo.",
+    data: [],
+    error: null
+  });
 });
 
 // Iniciar el servidor
