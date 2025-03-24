@@ -14,7 +14,8 @@ CREATE TABLE usuarios (
     celular VARCHAR(10) NOT NULL,
     tipo VARCHAR(20) DEFAULT 'usuario' NOT NULL,
     auth_provider VARCHAR(50),
-    email_verificado BOOLEAN DEFAULT FALSE,
+    email_verificado BOOLEAN DEFAULT FALSE NULL,
+    email_token VARCHAR(255) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -41,8 +42,8 @@ CREATE TABLE sessions (
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rifa_admin;
 
 
-INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider, email_verificado) 
-VALUES ('Admin', 'ortizgalindoj@gmail.com', '', '3053865489', 'admin', 'manual', true);
+INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider, email_verificado, email_token) 
+VALUES ('Admin', 'ortizgalindoj@gmail.com', '', '3053865489', 'admin', 'manual', true, '');
 
 INSERT INTO boletas (numero) 
 VALUES (1001), (1002), (1003), (1004), (1005);
@@ -57,7 +58,5 @@ SELECT * FROM usuarios WHERE email = 'maria@test.com'
 return
 
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rifa_admin;
-
-REVOKE ALL ON ALL TABLES IN SCHEMA public FROM rifa_admin;
-
 GRANT USAGE, SELECT, UPDATE ON SEQUENCE usuarios_id_seq TO rifa_admin;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM rifa_admin;

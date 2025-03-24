@@ -6,10 +6,12 @@ const bcrypt = require('bcryptjs');
 const { getFormattedDate } = require('../helpers/utils');
 const { removePreviousSessions } = require('../middlewares/authMiddleware');
 const DEBUG_LOGS = process.env.DEBUG_LOGS === "true";
+const transporter = require('../config/mailer');
+const { generateToken } = require('../helpers/tokenGenerator');
 
 router.post('/register', async (req, res) => {
   const { nombre, email, password, celular } = req.body;
-  debugger;
+
   try {
     if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Registrando usuario....`);
     const userExists = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
@@ -23,18 +25,33 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const salt = await bcrypt.genSalt(10); // Encriptar la contraseña antes de guardarla en la base de datos
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+    const emailToken = generateToken();
 
     const newUser = await pool.query(
-      "INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider) VALUES ($1, $2, $3, $4, 'usuario', 'local') RETURNING *",
-      [nombre, email, hashedPassword, celular]
+      "INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider, email_verificado, email_token) VALUES ($1, $2, $3, $4, 'usuario', 'local', false, $5) RETURNING *",
+      [nombre, email, hashedPassword, celular, emailToken]
     );
 
-    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Usuario registrado con éxito`);
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Usuario guardado en la base de datos con éxito`);
+
+    const verificationLink = `http://localhost:3000/auth/local/verify-email?token=${emailToken}`;
+
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Link de verificación: ${verificationLink}`);
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verifica tu correo electrónico',
+      html: `<p>Hola ${nombre},</p>
+             <p>Gracias por registrarte. Por favor, verifica tu correo electrónico haciendo clic en el siguiente enlace:</p>
+             <a href="${verificationLink}">Verificar correo</a>`,
+    });
+
     res.status(201).json({
       success: true,
-      message: "Usuario registrado con éxito",
+      message: "Registro exitoso. Revisa tu correo para confirmar tu cuenta.",
       data: [newUser.rows[0]],
       error: null
     });
@@ -42,7 +59,7 @@ router.post('/register', async (req, res) => {
     console.error(err);
     res.status(500).json({
       success: false,
-      message: "Hubo un error en la autenticación. Intenta de nuevo.",
+      message: "Error en el servidor.",
       data: [],
       error: err.message
     });
@@ -65,12 +82,25 @@ router.post('/login', async (req, res, next) => {
       });
     }
 
-    if (!user) return res.status(401).json({
-      success: false,
-      message: info.message || "Credenciales incorrectas",
-      data: [],
-      error: null
-    });
+    if (!user) {
+      console.error(`${getFormattedDate()} - Credenciales incorrectas`);
+      return res.status(401).json({
+        success: false,
+        message: info.message || "Credenciales incorrectas",
+        data: [],
+        error: null
+      });
+    }
+
+    if (!user.email_verificado) {
+      console.error(`${getFormattedDate()} - Correo no verificado`);
+      return res.status(403).json({
+        success: false,
+        message: "Debes verificar tu correo electrónico antes de iniciar sesión.",
+        data: [],
+        error: null
+      });
+    }
 
     req.logIn(user, (err) => {
       if (err) return res.status(500).json({
@@ -137,5 +167,45 @@ router.get('/logout', (req, res) => {
     });
   });
 });
+
+router.get('/verify-email', async (req, res) => {
+  const { token } = req.query;
+
+  try {
+    const query = "UPDATE usuarios SET email_verificado = true WHERE email_token = $1";
+
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Consulta SQL: ${query} Token recibido: ${token}`);
+
+    const result = await pool.query(query, [token]);
+
+    if (result.rowCount == 0) {
+      if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Token inválido o expirado.`);
+      return res.status(400).json({
+        success: false,
+        message: "Token inválido o expirado.",
+        data: [],
+        error: null
+      });
+    }
+
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Correo verificado exitosamente.`);
+    res.status(200).json({
+      success: true,
+      message: "Correo verificado exitosamente.",
+      data: [],
+      error: null
+    });
+
+  } catch (error) {
+    console.error('Error al verificar el correo:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error en el servidor",
+      data: [],
+      error: err.message
+    });
+  }
+});
+
 
 module.exports = router;
