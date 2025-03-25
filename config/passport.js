@@ -53,7 +53,7 @@ passport.use(new GoogleStrategy({
 
     if (user.rows.length === 0) {
       const newUser = await pool.query(
-        "INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider, email_verificado, email_token) VALUES ($1, $2, '', '', 'usuario', 'google', true, '') RETURNING *",
+        "INSERT INTO usuarios (nombre, email, password, celular, tipo, auth_provider, email_verificado, email_token) VALUES ($1, $2, '', '', 'usuario', 'google', true, null) RETURNING *",
         [profile.displayName, email]
       );
       return done(null, newUser.rows[0]);
@@ -71,17 +71,18 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (data, done) => {
-  if (DEBUG_LOGS) console.log(`${getFormattedDate()} - 🧐 Intentando deserializar usuario con ID: ${id}`);
+  if (DEBUG_LOGS) console.log(`${getFormattedDate()} - 🧐 Intentando deserializar usuario con ID: ${data.id}`);
   try {
-    const user = await pool.query("SELECT * FROM usuarios WHERE id = $1", [data.id]);
+    const { rows } = await pool.query("SELECT * FROM usuarios WHERE id = $1", [data.id]);
+    const user = rows[0];
 
-    if (user.rows.length === 0) {
+    if (!user) {
       if (DEBUG_LOGS) console.log(`${getFormattedDate()} - ⚠️ Usuario no encontrado en la base de datos.`);
       return done(new Error("Usuario no encontrado"), null);
     }
 
-    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - ✅ Usuario deserializado correctamente: ${userResult.rows[0]}`);
-    done(null, user.rows[0]);
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - ✅ Usuario deserializado correctamente: ${user.nombre}`);
+    done(null, user);
   } catch (err) {
     console.error("🔥 Error en deserialización:", err);
     done(err, null);

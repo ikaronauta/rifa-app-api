@@ -69,7 +69,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res, next) => {
   if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Iniciando sesión....`);
 
-  //await removePreviousSessions(req.user.id);
+  await removePreviousSessions(req.user.id);
 
   passport.authenticate('local', (err, user, info) => {
     if (err) {
@@ -122,6 +122,7 @@ router.post('/login', async (req, res, next) => {
 });
 
 router.get('/logout', (req, res) => {
+
   if (!req.user) {
     if (DEBUG_LOGS) console.log(`${getFormattedDate()} - No hay una sesión activa`);
     return res.status(401).json({
@@ -172,11 +173,15 @@ router.get('/verify-email', async (req, res) => {
   const { token } = req.query;
 
   try {
-    const query = "UPDATE usuarios SET email_verificado = true WHERE email_token = $1";
+    const userQuery = 'SELECT * FROM usuarios WHERE email_token = $1';
+    const updateUserQuery = "UPDATE usuarios SET email_verificado = true, email_token = NULL WHERE email_token = $1";
 
-    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Consulta SQL: ${query} Token recibido: ${token}`);
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Consulta SQL: ${userQuery} Token recibido: ${token}`);
+    const { rows } = await pool.query(userQuery, [token]);
+    const user = rows[0];
 
-    const result = await pool.query(query, [token]);
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Consulta SQL: ${updateUserQuery} Token recibido: ${token}`);
+    const result = await pool.query(updateUserQuery, [token]);
 
     if (result.rowCount == 0) {
       if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Token inválido o expirado.`);
@@ -188,16 +193,28 @@ router.get('/verify-email', async (req, res) => {
       });
     }
 
-    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Correo verificado exitosamente.`);
-    res.status(200).json({
-      success: true,
-      message: "Correo verificado exitosamente.",
-      data: [],
-      error: null
-    });
+    req.logIn(user, (err) => {
+      debugger;
+      if (err) {
+        console.error('Error al iniciar sesión después de la verificación:', err);
+        return res.status(500).json({
+          success: false,
+          message: "Correo verificado, pero error al iniciar sesión.",
+          data: [],
+          error: err.message
+        });
+      }
 
-  } catch (error) {
-    console.error('Error al verificar el correo:', error);
+      if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Sesión iniciada después de la verificación.`);
+      res.status(200).json({
+        success: true,
+        message: "Correo verificado y sesión iniciada.",
+        data: [{ user }],
+        error: null
+      });
+    });
+  } catch (err) {
+    console.error('Error al verificar el correo:', err);
     res.status(500).json({
       success: false,
       message: "Error en el servidor",
