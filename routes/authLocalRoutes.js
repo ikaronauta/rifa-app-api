@@ -224,5 +224,124 @@ router.get('/verify-email', async (req, res) => {
   }
 });
 
+router.post('/request-password-reset', async (req, res) => {
+  const { email } = req.body;
+  debugger;
+  try {
+    const { rows } = await pool.query("SELECT * FROM usuarios WHERE email = $1", [email]);
+    const user = rows[0];
+
+    if (!user) {
+      if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Usuario con el correo ${email} no encontrado en la base de datos.`);
+
+      return res.status(404).json({
+        success: false,
+        message: `Usuario con el correo ${email} no encontrado en la base de datos.`,
+        data: [],
+        error: null
+      });
+    }
+
+    const emailToken = generateToken();
+
+    const updateTokenQuery = 'UPDATE usuarios SET email_token = $1 WHERE id = $2';
+
+    const { rowCount } = await pool.query(updateTokenQuery, [emailToken, user.id]);
+
+    if (rowCount == 0) {
+      if (DEBUG_LOGS) console.error(`${getFormattedDate()} - No se pudo guardar el token para el usuario con el correo ${email}.`);
+
+      return res.status(500).json({
+        success: false,
+        message: `No se pudo guardar el token para el usuario con el correo ${email}.`,
+        data: [],
+        error: null
+      });
+    }
+
+    const changePassLink = `http://localhost:3000/auth/local/verify-reset-pass?token=${emailToken}`;
+
+    user.email_token = emailToken;
+
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Link para cambiar contraseña: ${changePassLink}`);
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Cambio de contraseña',
+      html: `<p>Hola ${user.nombre},</p>
+               <p>Para cambiar su contraseña de clic en el siguiente enlace:</p>
+               <a href="${changePassLink}">Cambiar Contraseña</a>`,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Se envió un correo a ${user.email} para cambiar la contraseña.`,
+      data: [],
+      error: null
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Error en el servidor.",
+      data: [],
+      error: err.message
+    });
+  }
+});
+
+router.post('/confirm-password-reset', async (req, res) => {
+  const { token, newPassword } = req.body;
+  debugger;
+  try {
+    const userQuery = 'SELECT * FROM usuarios WHERE email_token = $1';
+    const { rows } = await pool.query(userQuery, [token]);
+    const user = rows[0];
+
+    if (!user) {
+      if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Token inválido o expirado.`);
+      return res.status(400).json({
+        success: false,
+        message: "Token inválido o expirado.",
+        data: [],
+        error: null
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const updateUserQuery = "UPDATE usuarios SET password = $1, email_token = NULL WHERE id = $2";
+
+    const { rowCount } = await pool.query(updateUserQuery, [hashedPassword, user.id]);
+
+    if (rowCount == 0) {
+      console.error('No se pudo cambiar la contraseña.');
+      res.status(500).json({
+        success: false,
+        message: "No se pudo cambiar la contraseña",
+        data: [],
+        error: err.message
+      });
+    }
+
+    if (DEBUG_LOGS) console.warn(`${getFormattedDate()} - Cambio de contraseña exitoso.`);
+    res.status(200).json({
+      success: true,
+      message: 'Cambio de contraseña exitoso.',
+      data: [],
+      error: null
+    });
+  } catch (err) {
+    console.error('Error al cambiar la contraseña:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error en el servidor",
+      data: [],
+      error: err.message
+    });
+  }
+});
 
 module.exports = router;

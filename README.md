@@ -8,19 +8,26 @@
 │
 │── /config
 │   ├── db.js  
+│   ├── mailer.js  
 │   ├── passport.js 
+│
+│── /helpers
+│   ├── tokenGeneratos.js  
+│   ├── utils.js 
 │
 │── /middlewares
 │   ├── authMiddleware.js  
 │
 │── /routes
-│   ├── authRoutes.js
+│   ├── authGoogleRoutes.js
+│   ├── authLocalRoutes.js
 │   ├── userRoutes.js
 │
 │── .env
-│── server.js
+│── .gitignore
+│── nodemon.json
 │── package.json
 │── README.md
-│── .gitignore
+│── server.js
 
 ```
