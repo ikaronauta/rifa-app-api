@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <form id="payuForm" method="post" action="https://sandbox.checkout.payulatam.com/ppp-web-gateway-payu/">
+        <input name="merchantId" type="hidden" value="508029"> 
+        <input name="accountId" type="hidden" value="512321">
+        <input name="referenceCode" type="hidden" value="Test PAYU">
+        <input name="amount" type="hidden" value="5000.00">
+        <input name="currency" type="hidden" value="COP">
+        <input name="signature" type="hidden" value="">
+        <input name="test" type="hidden" value="1"> 
+        <input name="description" type="hidden" value="Compra de producto en mi tienda">
+        <input type="submit" value="Pagar con PayU">
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="form_test.js"></script>
+</body>
+</html>
