@@ -81,6 +81,16 @@ app.get('/login-error', (req, res) => {
   });
 });
 
+app.post('/payu-confirmation', (req, res) => {
+  console.log('Notificación de PayU recibida:', req.body);
+  res.sendStatus(200);
+});
+
+app.get('/payu-confirmation', (req, res) => {
+  console.log('Notificación de PayU recibida con GET:', req.query);
+  res.status(200).json({ success: true, message: "Recibido con GET", data: req.query });
+});
+
 // Iniciar el servidor
 app.listen(port, () => {
   console.log(`${getFormattedDate()} - Servidor corriendo en http://localhost:${port}`);

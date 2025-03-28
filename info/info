@@ -22,3 +22,7 @@ http://localhost:3000/
 node --inspect server.js
 chrome://inspect/#devices
 "Open dedicated DevTools for Node"
+
+curl -X POST https://16d6-191-156-38-188.ngrok-free.app/payu-confirmation -H "Content-Type: application/json" -d '{"test": "true"}'
+ngrok http http://localhost:3000
+
