@@ -91,6 +91,43 @@ app.get('/payu-confirmation', (req, res) => {
   res.status(200).json({ success: true, message: "Recibido con GET", data: req.query });
 });
 
+app.get('/get-boletas', async (req, res) => {
+  debugger;
+  const boletas = [];
+  const { cant: cantString } = req.query;
+  const cant = cantString ? parseInt(cantString) : 1;
+  const queryGetBoletas = 'SELECT * FROM seleccionar_boleta()';
+
+  if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boletas...`);
+
+  try {
+    for (let i = 0; i < cant; i++) {
+      const { rows } = await pool.query(queryGetBoletas);
+      const boleta = rows[0];
+
+      if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Boleta seleccionada: ${boleta.numero}`);
+
+      boletas.push(boleta);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Boleta consultada con exito.",
+      data: boletas,
+      error: null
+    });
+
+  } catch (err) {
+    console.error('Error al consultar las boletas:', err);
+    res.status(500).json({
+      success: false,
+      message: "Error al consultar las boletas",
+      data: [],
+      error: err.message
+    });
+  }
+});
+
 // Iniciar el servidor
 app.listen(port, () => {
   console.log(`${getFormattedDate()} - Servidor corriendo en http://localhost:${port}`);

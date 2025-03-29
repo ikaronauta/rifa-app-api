@@ -23,6 +23,34 @@ node --inspect server.js
 chrome://inspect/#devices
 "Open dedicated DevTools for Node"
 
-curl -X POST https://16d6-191-156-38-188.ngrok-free.app/payu-confirmation -H "Content-Type: application/json" -d '{"test": "true"}'
+curl -X POST https://5e85-191-156-34-30.ngrok-free.app/payu-confirmation -H "Content-Type: application/json" -d '{"test": "true"}'
 ngrok http http://localhost:3000
+
+curl -X POST "https://sandbox.api.payulatam.com/reports-api/4.0/service.cgi" \
+-H "Content-Type: application/json" \
+-d '{
+  "language": "es",
+  "command": "GET_MERCHANT_INFO",
+  "merchant": {
+    "apiLogin": "L7SZes5WF42Sb13",
+    "apiKey": "f7dItM6E5LrY6emEoY6b4r8ZG7"
+  }
+}'
+
+
+curl -X POST "https://sandbox.api.payulatam.com/reports-api/4.0/service.cgi" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "language": "es",
+           "command": "ORDER_DETAIL_BY_REFERENCE_CODE",
+           "merchant": {
+               "apiLogin": "pRRXKOl8ikMmt9u",
+               "apiKey": "4Vj8eK4rloUd272L48hsrarnUA"
+           },
+           "details": {
+               "referenceCode": "REFERENCIA_DEL_PAGO"
+           }
+       }'
+
+377813000000001
 

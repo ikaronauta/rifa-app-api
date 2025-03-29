@@ -21,15 +21,17 @@ CREATE TABLE usuarios (
 
 CREATE TABLE boletas (
     id SERIAL PRIMARY KEY,
-    numero INT UNIQUE NOT NULL
+    numero VARCHAR(4) UNIQUE NOT NULL,
+    estado INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE compras (
     id SERIAL PRIMARY KEY,
     usuario_id INT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     boleta_id INT NOT NULL UNIQUE REFERENCES boletas(id) ON DELETE CASCADE,
-    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    estado VARCHAR(20) DEFAULT 'pendiente' -- pendiente, pagado
+    pagado BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE sessions (
@@ -60,3 +62,34 @@ return
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO rifa_admin;
 GRANT USAGE, SELECT, UPDATE ON SEQUENCE usuarios_id_seq TO rifa_admin;
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM rifa_admin;
+
+INSERT INTO boletas (numero, estado)
+SELECT LPAD(i::TEXT, 4, '0'), 0
+FROM generate_series(0, 9999) AS i;
+
+CREATE OR REPLACE FUNCTION seleccionar_boleta()
+RETURNS TABLE(id INT, numero VARCHAR, estado INT) AS $$
+DECLARE
+    boleta_id INT;
+BEGIN
+    -- Seleccionar una boleta aleatoria disponible con bloqueo
+    WITH boleta_seleccionada AS (
+        SELECT b.id 
+        FROM boletas b
+        WHERE b.estado = 0 
+        ORDER BY RANDOM() 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    UPDATE boletas b
+    SET estado = 1
+    WHERE b.id IN (SELECT bs.id FROM boleta_seleccionada bs)
+    RETURNING b.id INTO boleta_id;
+
+    -- Retornar la boleta seleccionada
+    RETURN QUERY SELECT b.id, b.numero, b.estado FROM boletas b WHERE b.id = boleta_id;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
