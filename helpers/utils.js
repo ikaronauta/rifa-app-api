@@ -1,3 +1,6 @@
+const pool = require('../config/db');
+const DEBUG_LOGS = process.env.DEBUG_LOGS === "true";
+
 function getFormattedDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -11,4 +14,27 @@ function getFormattedDate() {
   return `[${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}]`;
 }
 
-module.exports = { getFormattedDate };
+async function getBoleta() {
+  const queryGetBoletas = 'SELECT * FROM seleccionar_boleta()';
+
+  try {
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boleta...`);
+
+    const { rows } = await pool.query(queryGetBoletas);
+    const boleta = rows[0];
+
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Boleta seleccionada: ${boleta.numero}`);
+
+    return boleta;
+    
+  } catch (err) {
+    return {
+      success: false,
+      message: err.message,
+      data: [],
+      error: err
+    };
+  }
+}
+
+module.exports = { getFormattedDate, getBoleta };

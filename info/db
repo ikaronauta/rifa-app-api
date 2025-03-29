@@ -71,25 +71,33 @@ CREATE OR REPLACE FUNCTION seleccionar_boleta()
 RETURNS TABLE(id INT, numero VARCHAR, estado INT) AS $$
 DECLARE
     boleta_id INT;
+    boleta_numero VARCHAR;
+    boleta_estado INT;
 BEGIN
     -- Seleccionar una boleta aleatoria disponible con bloqueo
     WITH boleta_seleccionada AS (
-        SELECT b.id 
+        SELECT b.id, b.numero, b.estado
         FROM boletas b
-        WHERE b.estado = 0 
-        ORDER BY RANDOM() 
-        LIMIT 1 
+        WHERE b.estado = 0
+        ORDER BY RANDOM()
+        LIMIT 1
         FOR UPDATE SKIP LOCKED
     )
     UPDATE boletas b
     SET estado = 1
     WHERE b.id IN (SELECT bs.id FROM boleta_seleccionada bs)
-    RETURNING b.id INTO boleta_id;
+    RETURNING b.id, b.numero, b.estado INTO boleta_id, boleta_numero, boleta_estado;
+
+    -- Si no se encontró una boleta disponible, salir sin retornar datos
+    IF boleta_id IS NULL THEN
+        RETURN;
+    END IF;
 
     -- Retornar la boleta seleccionada
-    RETURN QUERY SELECT b.id, b.numero, b.estado FROM boletas b WHERE b.id = boleta_id;
+    RETURN QUERY SELECT boleta_id, boleta_numero, boleta_estado;
 END;
 $$ LANGUAGE plpgsql;
+
 
 
 

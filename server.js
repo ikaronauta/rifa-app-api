@@ -5,7 +5,7 @@ const passport = require('./config/passport');
 const cors = require('cors');
 const pgSession = require('connect-pg-simple')(session);
 const pool = require('./config/db');
-const { getFormattedDate } = require('./helpers/utils');
+const { getFormattedDate, getBoleta } = require('./helpers/utils');
 
 const userRoutes = require('./routes/userRoutes');
 const authLocalRoutes = require('./routes/authLocalRoutes');
@@ -18,7 +18,7 @@ const DEBUG_LOGS = process.env.DEBUG_LOGS === "true";
 
 // Configuración de CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Reemplázalo con la URL de tu frontend
+  origin: 'http://127.0.0.1:5500', // Reemplázalo con la URL de tu frontend
   credentials: true
 }));
 
@@ -52,24 +52,52 @@ app.use('/users', userRoutes);
 
 // Ruta de inicio
 app.get('/', async (req, res) => {
-  try {
-    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boletas`);
-    const result = await pool.query('SELECT * FROM boletas');
-    res.status(200).json({
-      success: true,
-      message: "Boletas",
-      data: result.rows,
-      error: null
-    });
-  } catch (err) {
-    console.error(`${getFormattedDate()} - Error al obtener las boletas`);
-    res.status(500).json({
-      success: false,
-      message: "Error al obtener las boletas",
-      data: [],
-      error: null
-    }); //
+  const boletas = [];
+
+  for (let i = 0; i < 3; i++) {
+
+    let boleta = await getBoleta();
+
+    if (!boleta || !boleta.hasOwnProperty('id')) {
+      console.error('Error al consultar las boletas:', boleta);
+      return res.status(500).json({
+        success: false,
+        message: "Error al consultar las boletas",
+        data: [],
+        error: boleta.message
+      });
+    }
+
+    boletas.push(boleta);
   }
+
+  return res.status(200).json({
+    success: true,
+    message: "Boletas consultadas con exito.",
+    data: boletas,
+    error: null
+  });
+});
+
+app.get('/add-boleta', async (req, res) => {
+  let boleta = await getBoleta();
+
+  if (!boleta || !boleta.hasOwnProperty('id')) {
+    console.error('Error al consultar la boleta:', boleta);
+    return res.status(500).json({
+      success: false,
+      message: "Error al consultar las boletas",
+      data: [],
+      error: boleta.message
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "Boleta consultada con exito.",
+    data: [boleta],
+    error: null
+  });
 });
 
 app.get('/login-error', (req, res) => {
@@ -89,43 +117,6 @@ app.post('/payu-confirmation', (req, res) => {
 app.get('/payu-confirmation', (req, res) => {
   console.log('Notificación de PayU recibida con GET:', req.query);
   res.status(200).json({ success: true, message: "Recibido con GET", data: req.query });
-});
-
-app.get('/get-boletas', async (req, res) => {
-  debugger;
-  const boletas = [];
-  const { cant: cantString } = req.query;
-  const cant = cantString ? parseInt(cantString) : 1;
-  const queryGetBoletas = 'SELECT * FROM seleccionar_boleta()';
-
-  if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Consultando boletas...`);
-
-  try {
-    for (let i = 0; i < cant; i++) {
-      const { rows } = await pool.query(queryGetBoletas);
-      const boleta = rows[0];
-
-      if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Boleta seleccionada: ${boleta.numero}`);
-
-      boletas.push(boleta);
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Boleta consultada con exito.",
-      data: boletas,
-      error: null
-    });
-
-  } catch (err) {
-    console.error('Error al consultar las boletas:', err);
-    res.status(500).json({
-      success: false,
-      message: "Error al consultar las boletas",
-      data: [],
-      error: err.message
-    });
-  }
 });
 
 // Iniciar el servidor
