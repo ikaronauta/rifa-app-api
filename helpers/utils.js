@@ -59,7 +59,7 @@ async function changeStateBoletaByID(id) {
     return {
       success: true,
       message: `Se cambio el estado de la boleta con ID: ${id}.`,
-      data: [],
+      data: [{idBoleta: id}],
       error: null
     };
 
