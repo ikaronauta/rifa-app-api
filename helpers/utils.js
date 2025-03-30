@@ -26,7 +26,7 @@ async function getBoleta() {
     if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Boleta seleccionada: ${boleta.numero}`);
 
     return boleta;
-    
+
   } catch (err) {
     return {
       success: false,
@@ -37,4 +37,41 @@ async function getBoleta() {
   }
 }
 
-module.exports = { getFormattedDate, getBoleta };
+async function changeStateBoletaByID(id) {
+  const queryChangeStateBoletaByID = 'UPDATE boletas SET estado = 0 WHERE id = $1';
+
+  try {
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Cambiando estado boleta ID: ${id}`);
+
+    const { rowCount } = await pool.query(queryChangeStateBoletaByID, [id]);
+
+    if (parseInt(rowCount) == 0) {
+      if (DEBUG_LOGS) console.log(`${getFormattedDate()} - No se pudo cambiar el estado de la boleta con ID: ${id}.`);
+      return {
+        success: false,
+        message: `No se pudo cambiar el estado de la boleta con ID: ${id}.`,
+        data: [],
+        error: null
+      };
+    }
+
+    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Se cambio el estado de la boleta con ID: ${id}.`);
+    return {
+      success: true,
+      message: `Se cambio el estado de la boleta con ID: ${id}.`,
+      data: [],
+      error: null
+    };
+
+  } catch (err) {
+    console.error('Error en el servidor:', err);
+    return {
+      success: false,
+      message: "Error en el servidor",
+      data: [],
+      error: err.message
+    };
+  }
+}
+
+module.exports = { getFormattedDate, getBoleta, changeStateBoletaByID };

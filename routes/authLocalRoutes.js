@@ -194,7 +194,6 @@ router.get('/verify-email', async (req, res) => {
     }
 
     req.logIn(user, (err) => {
-      debugger;
       if (err) {
         console.error('Error al iniciar sesión después de la verificación:', err);
         return res.status(500).json({

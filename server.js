@@ -5,7 +5,7 @@ const passport = require('./config/passport');
 const cors = require('cors');
 const pgSession = require('connect-pg-simple')(session);
 const pool = require('./config/db');
-const { getFormattedDate, getBoleta } = require('./helpers/utils');
+const { getFormattedDate, getBoleta, changeStateBoletaByID } = require('./helpers/utils');
 
 const userRoutes = require('./routes/userRoutes');
 const authLocalRoutes = require('./routes/authLocalRoutes');
@@ -98,6 +98,16 @@ app.get('/add-boleta', async (req, res) => {
     data: [boleta],
     error: null
   });
+});
+
+app.get('/remove-boleta-by-id/:id', async (req, res) => {
+  const boletaId = req.params.id;  
+  const result = await changeStateBoletaByID(boletaId);
+
+  if (!result.success) 
+    return res.status(500).json(result);
+
+  return res.status(200).json(result);
 });
 
 app.get('/login-error', (req, res) => {
