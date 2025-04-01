@@ -37,41 +37,41 @@ async function getBoleta() {
   }
 }
 
-async function changeStateBoletaByID(id) {
-  const queryChangeStateBoletaByID = 'UPDATE boletas SET estado = 0 WHERE id = $1';
+async function updateStateById(id, state){
+  if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Cambiando estado boleta ID: ${id}`);
 
+  const queryChangeStateBoletaByID = 'UPDATE boletas SET estado = $1 WHERE id = $2';
+  const { rowCount } = await pool.query(queryChangeStateBoletaByID, [state, id]);
+
+  if(rowCount == 0){
+    let count = 0;
+    while (count == 0) {
+      count = await updateStateById(id, state);
+    }
+  }
+
+  return rowCount;
+}
+
+async function updateStateByArrIds(arrIds, state){
   try {
-    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Cambiando estado boleta ID: ${id}`);
 
-    const { rowCount } = await pool.query(queryChangeStateBoletaByID, [id]);
+    for (let id of arrIds) {      
+      const result = await updateStateById(id, state);
 
-    if (parseInt(rowCount) == 0) {
-      if (DEBUG_LOGS) console.log(`${getFormattedDate()} - No se pudo cambiar el estado de la boleta con ID: ${id}.`);
-      return {
-        success: false,
-        message: `No se pudo cambiar el estado de la boleta con ID: ${id}.`,
-        data: [],
-        error: null
-      };
+      if(result == 0){
+        let count = 0;
+        while (count == 0) {
+          count = await updateStateById(id, state);
+        }
+      }
     }
 
-    if (DEBUG_LOGS) console.log(`${getFormattedDate()} - Se cambio el estado de la boleta con ID: ${id}.`);
-    return {
-      success: true,
-      message: `Se cambio el estado de la boleta con ID: ${id}.`,
-      data: [{idBoleta: id}],
-      error: null
-    };
-
+    return true;
   } catch (err) {
-    console.error('Error en el servidor:', err);
-    return {
-      success: false,
-      message: "Error en el servidor",
-      data: [],
-      error: err.message
-    };
+    console.error('Error: ', err);
+    return false;
   }
 }
 
-module.exports = { getFormattedDate, getBoleta, changeStateBoletaByID };
+module.exports = { getFormattedDate, getBoleta, updateStateById, updateStateByArrIds };
